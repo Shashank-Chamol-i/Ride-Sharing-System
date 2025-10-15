@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ride Simulation</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+
+    header {
+      background-color: #000;
+      color: white;
+      width: 100%;
+      padding: 1rem 2rem;
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.25rem;
+    }
+
+    .grid-container {
+      margin-top: 2rem;
+      display: grid;
+      grid-template-columns: repeat(10, 50px);
+      grid-template-rows: repeat(10, 50px);
+      gap: 2px;
+      background-color: #ddd;
+      padding: 5px;
+      border-radius: 8px;
+    }
+
+    .cell {
+      background-color: white;
+      border: 1px solid #ccc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.2rem;
+      position: relative;
+    }
+
+    .pickup {
+      background-color: green;
+      color: white;
+    }
+
+    .dropoff {
+      background-color: red;
+      color: white;
+    }
+
+    .passed {
+      background-color: yellow;
+    }
+
+    .info {
+      margin-top: 1rem;
+      font-size: 1rem;
+      color: #333;
+    }
+
+    button {
+      margin-top: 1rem;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <header>Ride Simulation</header>
+  <div class="grid-container" id="grid"></div>
+  <div class="info" id="status">Driver location loaded. Click "Simulate" to animate ride.</div>
+
+  <button onclick="startSimulation()">Simulate</button>
+
+  <script>
+    const GRID_SIZE = 10;
+    const ORIGINAL_DRIVER_LOCATION = { x: 4, y: 4 }; // 1-based
+    let currentDriverPos = { ...ORIGINAL_DRIVER_LOCATION };
+
+    const pickup = parseLocation(sessionStorage.getItem("pickupLocation"));
+    const drop = parseLocation(sessionStorage.getItem("dropLocation"));
+
+    function parseLocation(str) {
+      const match = str?.match(/\((\d+),\s*(\d+)\)/);
+      return match ? { x: parseInt(match[1]), y: parseInt(match[2]) } : null;
+    }
+
+    const grid = document.getElementById("grid");
+
+    for (let y = 1; y <= GRID_SIZE; y++) {
+      for (let x = 1; x <= GRID_SIZE; x++) {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        cell.dataset.x = x;
+        cell.dataset.y = y;
+        grid.appendChild(cell);
+      }
+    }
+
+    function getCell(x, y) {
+      return document.querySelector(`.cell[data-x="${x}"][data-y="${y}"]`);
+    }
+
+    function clearDriver() {
+      document.querySelectorAll(".cell").forEach(cell => {
+        if (cell.textContent === "👨‍✈️") cell.textContent = "";
+      });
+    }
+
+    function drawDriver(pos) {
+      clearDriver();
+      const cell = getCell(pos.x, pos.y);
+      if (cell) {
+        cell.textContent = "👨‍✈️";
+      }
+    }
+
+    function markPickupDrop() {
+      if (pickup) {
+        const pickupCell = getCell(pickup.x, pickup.y);
+        if (pickupCell) {
+          pickupCell.classList.add("pickup");
+          pickupCell.textContent = "📍";
+        }
+      }
+
+      if (drop) {
+        const dropCell = getCell(drop.x, drop.y);
+        if (dropCell) {
+          dropCell.classList.add("dropoff");
+          dropCell.textContent = "🎯";
+        }
+      }
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function moveTo(target, colorClass) {
+      while (currentDriverPos.x !== target.x || currentDriverPos.y !== target.y) {
+        const cell = getCell(currentDriverPos.x, currentDriverPos.y);
+        if (colorClass && cell && !cell.classList.contains("pickup") && !cell.classList.contains("dropoff")) {
+          cell.classList.add(colorClass);
+        }
+
+        if (currentDriverPos.x < target.x) currentDriverPos.x++;
+        else if (currentDriverPos.x > target.x) currentDriverPos.x--;
+
+        else if (currentDriverPos.y < target.y) currentDriverPos.y++;
+        else if (currentDriverPos.y > target.y) currentDriverPos.y--;
+
+        drawDriver(currentDriverPos);
+        await sleep(500);
+      }
+    }
+
+    async function startSimulation() {
+      document.getElementById("status").textContent = "Simulating ride...";
+
+      markPickupDrop();
+
+      // Step 1: Move to pickup 📍 with yellow trail
+      if (pickup) await moveTo(pickup, "passed");
+
+      // Step 2: Move to drop 🎯 with yellow trail
+      if (drop) await moveTo(drop, "passed");
+
+      // Final driver draw
+      drawDriver(currentDriverPos);
+
+      document.getElementById("status").textContent = `✅ Ride complete! Driver stopped at drop-off location (${currentDriverPos.x}, ${currentDriverPos.y})`;
+
+      alert("✅ Ride Completed! Driver stopped at drop-off location.");
+    }
+
+    // Initial Setup
+    markPickupDrop();
+    drawDriver(currentDriverPos);
+
+    console.log("Pickup:", pickup);
+    console.log("Drop:", drop);
+  </script>
+</body>
+</html>

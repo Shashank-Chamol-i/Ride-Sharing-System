@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Passenger - Ride Sharing System</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background-color: #f9f9f9;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .navbar {
+      background-color: black;
+      padding: 15px;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .navbar button {
+      background-color: white;
+      color: black;
+      font-weight: bold;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .content {
+      display: flex;
+      flex: 1;
+      position: relative;
+    }
+    .sidebar {
+      width: 300px;
+      padding: 20px;
+      background-color: #fff;
+      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+      box-sizing: border-box;
+      z-index: 1;
+    }
+    .sidebar h2 {
+      margin-top: 0;
+      color: #111;
+    }
+    .sidebar label {
+      font-weight: bold;
+    }
+    .sidebar input,
+    .sidebar select,
+    .sidebar button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+    .sidebar button {
+      background-color: black;
+      color: white;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+    }
+    .map {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      grid-template-rows: repeat(10, 1fr);
+      gap: 2px;
+      background-color: #ccc;
+      padding: 20px;
+      flex-grow: 1;
+      height: calc(100vh - 60px);
+      box-sizing: border-box;
+    }
+    .cell {
+      background-color: white;
+      border: 1px solid #bbb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .pickup {
+      background-color: green !important;
+    }
+    .drop {
+      background-color: red !important;
+    }
+    .rides-overlay {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 500px;
+      background-color: rgba(255, 255, 255, 0.95);
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      z-index: 2;
+      display: none;
+      flex-direction: column;
+      border-radius: 8px;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+    .rides-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .rides-header h3 {
+      margin: 0;
+    }
+    .rides-header button {
+      background: transparent;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .ride-option {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .home-button {
+      background-color: #fff;
+      color: #000;
+      border: 1px solid #ddd;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      border-radius: 4px;
+      text-decoration: none;
+      margin: 18px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 3;
+    }
+    .ride-option button {
+      padding: 5px 10px;
+      background-color: black;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    @media (max-width: 600px) {
+      .rides-overlay {
+        width: 90%;
+      }
+      .sidebar {
+        width: 100%;
+        position: absolute;
+        z-index: 4;
+        background: white;
+        padding: 10px;
+        box-sizing: border-box;
+      }
+      .content {
+        flex-direction: column;
+      }
+      .map {
+        height: 300px;
+        margin-top: 220px;
+      }
+    }
+    #loaderOverlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    #loaderOverlay > div {
+      background: #fff;
+      padding: 30px 40px;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 1.2rem;
+      box-shadow: 0 0 10px rgba(0,0,0,0.25);
+    }
+    .spinner {
+      margin-bottom: 20px;
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #000;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
+    }
+  </style>
+</head>
+<body>
+  <a href="../index.html" class="home-button">Home</a>
+  <div class="navbar">
+    <button onclick="location.reload()">Ride Sharing System - Passenger</button>
+  </div>
+
+  <div class="content">
+    <div class="sidebar">
+      <h2>Get a ride</h2>
+      <div>
+        <label>Pickup location:</label><br />
+        <input type="text" id="pickupInput" placeholder="Click map to select pickup" readonly /><br />
+
+        <label>Drop location:</label><br />
+        <input type="text" id="dropInput" placeholder="Click map to select drop" readonly /><br />
+
+        <label>Pickup time:</label><br />
+        <select id="pickupTime">
+          <option value="now">Pickup now</option>
+          <option value="later">Schedule later</option>
+        </select><br />
+
+        <label>For:</label><br />
+        <select id="rideFor">
+          <option value="me">For me</option>
+          <option value="someoneElse">For someone else</option>
+        </select><br />
+
+        <button onclick="showRides()">Search</button>
+        <button onclick="resetSelection()">Reset</button>
+      </div>
+    </div>
+
+    <div class="map" id="map"></div>
+
+    <div class="rides-overlay" id="ridesOverlay">
+      <div class="rides-header">
+        <h3>Available Rides</h3>
+        <button onclick="closeRides()">×</button>
+      </div>
+      <div id="ridesContent"></div>
+    </div>
+  </div>
+
+  <div id="loaderOverlay">
+    <div>
+      <div class="spinner"></div>
+      <div id="loaderMessage">Booking your ride...</div>
+    </div>
+  </div>
+
+  <script>
+    const map = document.getElementById('map');
+    const pickupInput = document.getElementById('pickupInput');
+    const dropInput = document.getElementById('dropInput');
+    const ridesOverlay = document.getElementById('ridesOverlay');
+    const ridesContent = document.getElementById('ridesContent');
+    const loaderOverlay = document.getElementById('loaderOverlay');
+    const loaderMessage = document.getElementById('loaderMessage');
+
+    let isSelectingPickup = true;
+    let pickupCell = null;
+    let dropCell = null;
+
+    for (let row = 0; row < 10; row++) {
+      for (let col = 0; col < 10; col++) {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.dataset.row = row;
+        cell.dataset.col = col;
+
+        if (row === 3 && col === 3) {
+          cell.style.backgroundColor = 'purple';
+        }
+
+        cell.addEventListener('click', () => {
+          const coords = `(${row + 1}, ${col + 1})`;
+
+          if (isSelectingPickup) {
+            if (pickupCell) pickupCell.classList.remove('pickup');
+            pickupCell = cell;
+            cell.classList.add('pickup');
+            pickupInput.value = coords;
+            isSelectingPickup = false;
+          } else {
+            if (dropCell) dropCell.classList.remove('drop');
+            dropCell = cell;
+            cell.classList.add('drop');
+            dropInput.value = coords;
+            isSelectingPickup = true;
+          }
+        });
+
+        map.appendChild(cell);
+      }
+    }
+
+    function calculateDistance() {
+      if (!pickupCell || !dropCell) return 0;
+      const dx = Math.abs(pickupCell.dataset.row - dropCell.dataset.row);
+      const dy = Math.abs(pickupCell.dataset.col - dropCell.dataset.col);
+      return dx + dy;
+    }
+
+    function closeRides() {
+      ridesOverlay.style.display = 'none';
+    }
+
+    function resetSelection() {
+      if (pickupCell) pickupCell.classList.remove('pickup');
+      if (dropCell) dropCell.classList.remove('drop');
+      pickupInput.value = '';
+      dropInput.value = '';
+      pickupCell = null;
+      dropCell = null;
+      isSelectingPickup = true;
+      closeRides();
+    }
+
+    function showRides() {
+      const distance = calculateDistance();
+      if (distance === 0) {
+        alert('Please select both pickup and drop location.');
+        return;
+      }
+
+      const rides = [
+        { name: 'BIKE', price: distance * 3, distance: distance },
+        { name: 'CAR', price: distance * 5, distance: distance },
+        { name: 'SUV', price: distance * 7, distance: distance },
+      ];
+
+      ridesContent.innerHTML = rides.map(ride => `
+        <div class="ride-option">
+          <div>
+            <strong>${ride.name}</strong><br />
+            <em>₹${ride.price}</em>
+          </div>
+          <button onclick='bookRide(${JSON.stringify(ride)})'>Book Ride</button>
+        </div>
+      `).join('');
+
+      ridesOverlay.style.display = 'flex';
+    }
+
+    async function bookRide(ride) {
+      const pickupLocation = pickupInput.value;
+      const dropLocation = dropInput.value;
+
+      const rideRequest = {
+        pickup_location: pickupLocation,
+        drop_location: dropLocation,
+        vehicle_type: ride.name,
+        price: ride.price
+      };
+
+      loaderMessage.textContent = 'Booking your ride...';
+      loaderOverlay.style.display = 'flex';
+
+      try {
+        const response = await fetch('http://localhost:8080/api/rides/request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(rideRequest)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          loaderMessage.textContent = 'Ride Requested Successfully!';
+        } else {
+          console.error('Server error:', data);
+          loaderMessage.textContent = data.message || 'Failed to book ride. Please try again.';
+        }
+      } catch (error) {
+        console.error('Network error:', error);
+        loaderMessage.textContent = 'An error occurred while booking the ride.';
+      }
+
+      setTimeout(() => {
+        loaderOverlay.style.display = 'none';
+        if (loaderMessage.textContent === 'Ride Requested Successfully!') {
+          resetSelection();
+          closeRides();
+        }
+      }, 3000);
+    }
+  </script>
+</body>
+</html>

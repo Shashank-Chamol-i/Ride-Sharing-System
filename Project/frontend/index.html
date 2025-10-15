@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ride Sharing System - Home</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+
+        header {
+            background-color: #000;
+            color: #fff;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            margin: 0;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin-right: 1rem;
+            font-weight: bold;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: row;
+            padding: 2rem;
+            gap: 2rem;
+        }
+
+        .form-container {
+            width: 40%;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-container h2 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group button {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .form-group button {
+            background-color: #000;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .form-group button:hover {
+            background-color: #444;
+        }
+
+        .map-container {
+            flex-grow: 1;
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(10, 1fr);
+            gap: 2px;
+            background-color: #ddd;
+            border: 1px solid #bbb;
+            border-radius: 8px;
+        }
+
+        .grid-cell {
+            background-color: #fff;
+            border: 1px solid #ccc;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .grid-cell.pickup {
+            background-color: #28a745; /* Green for pickup */
+        }
+
+        .grid-cell.dropoff {
+            background-color: #dc3545; /* Red for dropoff */
+        }
+
+        #price {
+            margin-top: 1rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Ride Sharing System</h1>
+        <nav>
+            <a href="login.html">Login</a>
+            <a href="register.html">Register</a>
+        </nav>
+    </header>
+    <div class="container">
+        <div class="form-container">
+            <h2>Book a Ride</h2>
+            <div class="form-group">
+                <label for="pickup">Pickup Location:</label>
+                <input type="text" id="pickup" placeholder="Click on map to select pickup location" readonly />
+            </div>
+            <div class="form-group">
+                <label for="dropoff">Dropoff Location:</label>
+                <input type="text" id="dropoff" placeholder="Click on map to select dropoff location" readonly />
+            </div>
+            <div class="form-group">
+                <button id="search">Search</button>
+                <button id="reset">Reset</button>
+            </div>
+            <div id="price"></div>
+        </div>
+        <div class="map-container" id="map-container"></div>
+    </div>
+
+    <script>
+        const mapContainer = document.getElementById('map-container');
+        let pickupCell = null;
+        let dropoffCell = null;
+
+        for (let row = 0; row < 10; row++) {
+            for (let col = 0; col < 10; col++) {
+                const cell = document.createElement('div');
+                cell.classList.add('grid-cell');
+                cell.dataset.row = row;
+                cell.dataset.col = col;
+
+                cell.addEventListener('click', () => {
+                    if (!pickupCell) {
+                        pickupCell = cell;
+                        cell.classList.add('pickup');
+                        document.getElementById('pickup').value = `(${row}, ${col})`;
+                    } else if (!dropoffCell && cell !== pickupCell) {
+                        dropoffCell = cell;
+                        cell.classList.add('dropoff');
+                        document.getElementById('dropoff').value = `(${row}, ${col})`;
+                    }
+                });
+
+                mapContainer.appendChild(cell);
+            }
+        }
+
+        document.getElementById('search').addEventListener('click', () => {
+            if (pickupCell && dropoffCell) {
+                const pickupRow = parseInt(pickupCell.dataset.row);
+                const pickupCol = parseInt(pickupCell.dataset.col);
+                const dropoffRow = parseInt(dropoffCell.dataset.row);
+                const dropoffCol = parseInt(dropoffCell.dataset.col);
+
+                const distance = Math.abs(pickupRow - dropoffRow) + Math.abs(pickupCol - dropoffCol);
+                const cost = distance * 3;
+
+                document.getElementById('price').innerText = `Total Cost: ₹${cost}`;
+            } else {
+                alert('Please select both pickup and dropoff locations!');
+            }
+        });
+
+        document.getElementById('reset').addEventListener('click', () => {
+            if (pickupCell) {
+                pickupCell.classList.remove('pickup');
+                pickupCell = null;
+                document.getElementById('pickup').value = '';
+            }
+            if (dropoffCell) {
+                dropoffCell.classList.remove('dropoff');
+                dropoffCell = null;
+                document.getElementById('dropoff').value = '';
+            }
+            document.getElementById('price').innerText = '';
+        });
+    </script>
+</body>
+</html>
+

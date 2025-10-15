@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ride Sharing System - Driver</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+    }
+
+    header {
+      background-color: #000;
+      color: white;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: bold;
+      font-size: 1.25rem;
+    }
+
+    header button {
+      background-color: white;
+      color: black;
+      border: none;
+      padding: 0.5rem 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background-color 0.3s ease;
+    }
+
+    header button:hover {
+      background-color: #ddd;
+    }
+
+    main {
+      display: flex;
+      justify-content: center;
+      margin-top: 4rem;
+    }
+
+    .card {
+      background: white;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      border-radius: 8px;
+      width: 400px;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    .card h2 {
+      margin-bottom: 1.5rem;
+      font-weight: 700;
+      color: #333;
+    }
+
+    #show-requests-btn {
+      padding: 0.75rem 1.25rem;
+      font-weight: 600;
+      font-size: 1rem;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-bottom: 1rem;
+      width: 100%;
+    }
+
+    #show-requests-btn:hover {
+      background-color: #0056b3;
+    }
+
+    .requests-container {
+      display: none;
+      margin-top: 1rem;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      background-color: #fff;
+      animation: slideDown 0.3s ease-out;
+    }
+
+    .request-item {
+      padding: 1rem;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      transition: background-color 0.2s ease;
+      background-color: #fafafa;
+      position: relative;
+    }
+
+    .request-item:last-child {
+      border-bottom: none;
+    }
+
+    .request-item:hover {
+      background-color: #f0f0f0;
+    }
+
+    .request-item.top-priority {
+      background-color: #e7f3ff;
+      border-left: 4px solid #007bff;
+      animation: pulse 1.5s infinite;
+    }
+
+    .top-priority-badge {
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      background-color: #007bff;
+      color: white;
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+
+    .passenger-icon {
+      width: 40px;
+      height: 40px;
+      line-height: 40px;
+      border-radius: 50%;
+      background-color: #007bff;
+      color: white;
+      text-align: center;
+      font-size: 1.5rem;
+      margin-right: 1rem;
+      flex-shrink: 0;
+    }
+
+    .request-details {
+      flex: 1;
+      text-align: left;
+      font-size: 0.9rem;
+      color: #333;
+    }
+
+    .request-details strong {
+      color: #007bff;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .accept-btn, .decline-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform 0.2s ease, background-color 0.3s ease;
+    }
+
+    .accept-btn {
+      background-color: #28a745;
+    }
+
+    .decline-btn {
+      background-color: #dc3545;
+    }
+
+    .accept-btn:hover, .decline-btn:hover {
+      transform: scale(1.1);
+    }
+
+    .accept-btn::before {
+      content: '✔';
+      color: white;
+      font-size: 1rem;
+    }
+
+    .decline-btn::before {
+      content: '✖';
+      color: white;
+      font-size: 1rem;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.4);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(0, 123, 255, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(0, 123, 255, 0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    Ride Sharing System - Driver
+    <button onclick="goHome()">Home</button>
+  </header>
+  <main>
+    <div class="card">
+      <h2>Passenger Ride Requests</h2>
+      <button id="show-requests-btn">Show the Available Requests</button>
+      <div id="requests-container" class="requests-container"></div>
+    </div>
+  </main>
+
+  <script>
+    const DRIVER_LOCATION = { x: 4, y: 4 };
+    const DRIVER_ID = 1;
+
+    function goHome() {
+      window.location.href = '/frontend/index.html';
+    }
+
+    const showRequestsBtn = document.getElementById('show-requests-btn');
+    const requestsContainer = document.getElementById('requests-container');
+
+    // Calculate Manhattan distance from driver to pickup location
+    function calculateDistance(pickupLocation) {
+      if (!pickupLocation || typeof pickupLocation !== 'string') {
+        console.warn('Invalid pickup location (not a string or null):', pickupLocation);
+        return Number.MAX_VALUE;
+      }
+      // Trim whitespace and normalize input
+      const cleanedLocation = pickupLocation.trim();
+      console.log(`Processing pickup location: "${cleanedLocation}"`);
+      // Match (x,y) with optional whitespace around comma
+      const match = cleanedLocation.match(/^\((\d+)\s*,\s*(\d+)\)$/);
+      if (!match) {
+        console.warn(`Failed to parse pickup location: "${cleanedLocation}"`);
+        return Number.MAX_VALUE;
+      }
+      const x = parseInt(match[1]);
+      const y = parseInt(match[2]);
+      const distance = Math.abs(x - DRIVER_LOCATION.x) + Math.abs(y - DRIVER_LOCATION.y);
+      console.log(`Calculated distance for (${x},${y}): ${distance} units`);
+      return distance;
+    }
+
+    async function fetchRideRequests() {
+      try {
+        const response = await fetch(`http://localhost:8080/api/rides/driver/${DRIVER_ID}`, {
+          cache: 'no-store' // Prevent caching
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Network response not ok');
+        }
+        const rides = await response.json();
+        console.log('Raw API response:', JSON.stringify(rides, null, 2));
+        // Sort rides by distance to driver (4,4), closest first
+        const sortedRides = rides.sort((a, b) => {
+          const distA = calculateDistance(a.pickup_location);
+          const distB = calculateDistance(b.pickup_location);
+          console.log(`Comparing ${a.pickup_location} (${distA}) vs ${b.pickup_location} (${distB})`);
+          if (distA === distB) {
+            return a.id - b.id; // Secondary sort by ride ID (ascending)
+          }
+          return distA - distB; // Ascending order for closest pickup
+        });
+        console.log('Sorted rides:', sortedRides.map(r => ({
+          id: r.id,
+          pickup: r.pickup_location,
+          distance: calculateDistance(r.pickup_location)
+        })));
+        return sortedRides;
+      } catch (error) {
+        console.error('Fetch error:', error);
+        throw error;
+      }
+    }
+
+    function storeRideLocations(rideId, pickupLocation, dropLocation) {
+      sessionStorage.setItem('rideId', rideId);
+      sessionStorage.setItem('pickupLocation', pickupLocation);
+      sessionStorage.setItem('dropLocation', dropLocation);
+    }
+
+    async function acceptRide(rideId, pickupLocation, dropLocation) {
+      try {
+        const response = await fetch(`http://localhost:8080/api/rides/${rideId}/accept?driverId=${DRIVER_ID}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const contentType = response.headers.get('Content-Type');
+        let data;
+
+        if (contentType && contentType.includes('application/json')) {
+          data = await response.json();
+          if (!response.ok) throw new Error(data.message || 'Failed to accept ride');
+        } else {
+          const text = await response.text();
+          if (!response.ok) throw new Error(text || 'Failed to accept ride');
+          data = { message: text };
+        }
+
+        storeRideLocations(rideId, pickupLocation, dropLocation);
+        window.location.href = 'simulation.html';
+        return data;
+      } catch (error) {
+        console.error('Accept ride error:', error);
+        throw error;
+      }
+    }
+
+    async function declineRide(rideId) {
+      try {
+        const response = await fetch(`http://localhost:8080/api/rides/${rideId}/decline`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const contentType = response.headers.get('Content-Type');
+        let data;
+
+        if (contentType && contentType.includes('application/json')) {
+          data = await response.json();
+          if (!response.ok) throw new Error(data.message || 'Failed to decline ride');
+        } else {
+          const text = await response.text();
+          if (!response.ok) throw new Error(text || 'Failed to decline ride');
+          data = { message: text };
+        }
+
+        return data;
+      } catch (error) {
+        console.error('Decline ride error:', error);
+        throw error;
+      }
+    }
+
+    showRequestsBtn.addEventListener('click', async () => {
+      showRequestsBtn.textContent = 'Loading...';
+      showRequestsBtn.disabled = true;
+
+      try {
+        const rides = await fetchRideRequests();
+
+        if (rides.length === 0) {
+          requestsContainer.style.display = 'none';
+          alert('No ride requests at the moment.');
+          showRequestsBtn.textContent = 'Show the Available Requests';
+          showRequestsBtn.disabled = false;
+          return;
+        }
+
+        requestsContainer.innerHTML = '';
+        rides.forEach((ride, index) => {
+          const passengerName = `Passenger${ride.id}`;
+          const distance = calculateDistance(ride.pickup_location);
+          const requestItem = document.createElement('div');
+          requestItem.classList.add('request-item');
+          if (index === 0 && distance !== Number.MAX_VALUE) {
+            requestItem.classList.add('top-priority');
+          }
+          requestItem.innerHTML = `
+            ${index === 0 && distance !== Number.MAX_VALUE ? '<span class="top-priority-badge">Top Priority</span>' : ''}
+            <div class="passenger-icon">🧑</div>
+            <div class="request-details">
+              <strong>${passengerName}</strong><br>
+              Pickup: ${ride.pickup_location}, Drop: ${ride.drop_location}<br>
+              Vehicle: ${ride.vehicle_type}, Price: ₹${ride.price}
+              ${distance !== Number.MAX_VALUE ? `<br>Distance from Driver: ${distance} units` : '<br>Invalid pickup location'}
+            </div>
+            <div class="action-buttons">
+              <button class="accept-btn" data-ride-id="${ride.id}" data-pickup="${ride.pickup_location}" data-drop="${ride.drop_location}"></button>
+              <button class="decline-btn" data-ride-id="${ride.id}"></button>
+            </div>
+          `;
+          requestsContainer.appendChild(requestItem);
+        });
+
+        document.querySelectorAll('.accept-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const rideId = btn.dataset.rideId;
+            const pickupLocation = btn.dataset.pickup;
+            const dropLocation = btn.dataset.drop;
+            try {
+              await acceptRide(rideId, pickupLocation, dropLocation);
+            } catch (error) {
+              alert('Failed to accept ride: ' + error.message);
+            }
+          });
+        });
+
+        document.querySelectorAll('.decline-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const rideId = btn.dataset.rideId;
+            try {
+              await declineRide(rideId);
+              alert('Passenger request declined');
+              // Remove the declined ride from the DOM
+              btn.parentElement.parentElement.remove();
+              if (!requestsContainer.children.length) {
+                requestsContainer.style.display = 'none';
+              } else {
+                // Trigger a full refresh to ensure correct priority
+                showRequestsBtn.click();
+              }
+            } catch (error) {
+              alert('Failed to decline ride: ' + error.message);
+            }
+          });
+        });
+
+        requestsContainer.style.display = 'block';
+      } catch (error) {
+        alert('Failed to load ride requests: ' + error.message);
+        console.error(error);
+      } finally {
+        showRequestsBtn.textContent = 'Show the Available Requests';
+        showRequestsBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

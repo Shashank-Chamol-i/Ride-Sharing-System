@@ -1,0 +1,15 @@
+com\ridesharing\controller\RideController.class
+com\ridesharing\entity\RideRequest.class
+com\ridesharing\repository\RideRequestRepository.class
+com\ridesharing\repository\UserRepository.class
+com\ridesharing\service\RideService.class
+com\ridesharing\RideSharingApplication.class
+com\ridesharing\service\impl\UserServiceImplementation.class
+com\ridesharing\service\RideNotificationService.class
+com\ridesharing\service\UserService.class
+com\ridesharing\entity\User.class
+com\ridesharing\utils\DriverRunnable.class
+com\ridesharing\controller\AuthController.class
+com\ridesharing\QueueConfig.class
+com\ridesharing\config\WebSocketConfig.class
+com\ridesharing\service\impl\RideServiceImplementation.class
